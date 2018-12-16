@@ -51,7 +51,8 @@ class Game():
         self.state = self.state_lose
         while (
             self.state in self.barriers or
-            self.state in [self.state_lose, self.state_win]):
+            self.state in [self.state_lose, self.state_win]
+            ):
             self.state = np.random.choice(16)
 
 
@@ -123,7 +124,7 @@ class Game():
 
 action_value = np.zeros((16, 4))
 
-nepisodes = 10_000
+nepisodes = 20_000
 lrs = np.geomspace(2, 1, nepisodes)-1
 for episode in range(nepisodes):
     ended = 0
@@ -135,7 +136,7 @@ for episode in range(nepisodes):
         new_state, reward, ended = game.act(action)
         action_value[cur_state, action] = (
             (1 - lr) * action_value[cur_state, action] +
-            lr * (reward + .9 * np.max(action_value[new_state, :]))
+            lr * (reward + .95 * np.max(action_value[new_state, :]))
         )
 
 def formatter(f):
@@ -174,11 +175,10 @@ for i in range(0, 16, 4):
 
     print("-----------------------------------------------------------")
 
-action_value
 policy = np.argmax(action_value, 1).reshape((4,4))
 policy = np.array(policy, dtype=str)
-policy[policy == '0'] = "up"
+policy[policy == '0'] = " up  "
 policy[policy == '1'] = "right"
-policy[policy == '2'] = "down"
-policy[policy == '3'] = "left"
+policy[policy == '2'] = "down "
+policy[policy == '3'] = "left "
 print(policy)

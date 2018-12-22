@@ -16,6 +16,15 @@
 
 import numpy as np
 
+try:
+    from scipy.special import softmax
+except ImportError:
+    def softmax(x):
+        y = x - np.max(x)
+        w = np.exp(y)
+        w = w / w.sum()
+        return w
+
 # Actions:
 # up = 0
 # right = 1
@@ -122,7 +131,18 @@ class Game():
 
         return no_end_reward
 
+def decide(state, action_value):
+    action = np.random.choice(5, p=[.1, .1, .1, .1, .6])
+    if action <= 3:
+        return action
+
+    actions_log_weights = action_value[state]
+    actions_weights = softmax(actions_log_weights)
+    action = np.random.choice(4, p=actions_weights)
+    return action
+
 action_value = np.zeros((16, 4))
+action_value_frozen = action_value.copy()
 
 nepisodes = 20_000
 lrs = np.geomspace(2, 1, nepisodes)-1
@@ -132,12 +152,17 @@ for episode in range(nepisodes):
     lr = lrs[episode]
     while not ended:
         cur_state = game.state
-        action = np.random.choice(4)
+        # action = np.random.choice(4)
+        action = decide(cur_state, action_value)
         new_state, reward, ended = game.act(action)
         action_value[cur_state, action] = (
             (1 - lr) * action_value[cur_state, action] +
-            lr * (reward + .95 * np.max(action_value[new_state, :]))
+            lr * (reward + .95 * action_value[new_state, np.argmax(action_value_frozen[new_state])])
         )
+        action_value_temp = action_value
+        action_value = action_value_frozen
+        action_value_frozen = action_value_temp
+
 
 def formatter(f):
     f = np.round(f, 2)

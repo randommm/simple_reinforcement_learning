@@ -16,15 +16,6 @@
 
 import numpy as np
 
-try:
-    from scipy.special import softmax
-except ImportError:
-    def softmax(x):
-        y = x - np.max(x)
-        w = np.exp(y)
-        w = w / w.sum()
-        return w
-
 # Actions:
 # up = 0
 # right = 1
@@ -144,90 +135,3 @@ class Game():
         self.battery_left -= self.battery_spend
 
         return - self.loss_spendbat, 0
-
-action_value = np.zeros((16, 13, 4))
-action_value_frozen = action_value.copy()
-def decide(state, action_value):
-    actions_log_weights = action_value[state[0], state[1]]
-    actions_weights = softmax(actions_log_weights)
-    actions_weights += .4
-    actions_weights /= 2.6
-    action = np.random.choice(4, p=actions_weights)
-    return action
-
-nepisodes = 20000
-lrs = np.geomspace(2, 1.1, nepisodes)-1
-refroze = 0
-for episode in range(nepisodes):
-    ended = 0
-    game = Game()
-    lr = lrs[episode]
-
-    while not ended:
-        cur_state = game.state
-        #action = decide(cur_state, action_value)
-        action = np.random.choice(4)
-        new_state, reward, ended = game.act(action)
-
-        action_value[cur_state[0], cur_state[1], action] = (
-            (1 - lr) *
-            action_value[cur_state[0], cur_state[1], action] +
-            lr * (reward + 0.99 *
-                np.max(action_value_frozen[new_state[0], new_state[1]]))
-        )
-        if refroze >= 20:
-            action_value_frozen = action_value.copy()
-            refroze = 0
-        else:
-            refroze += 1
-
-def formatter(f):
-    f = np.round(f, 2)
-    fabs = np.abs(f)
-    r = str(f)
-
-    if fabs == np.round(fabs, 1):
-        r += "0"
-    elif fabs == np.round(fabs, 0):
-        r += "00"
-
-    if f > 0:
-        r = "+" + r
-    if fabs < 10:
-        r = " " + r
-    if f == 0:
-        r = "  --- "
-
-
-    r += " "
-
-    return r
-
-np.set_printoptions(formatter=dict(float=formatter))
-
-for time in range(2):
-    action_value_f = action_value[:, time]
-    for i in range(0, 16, 4):
-        for j in range(i, (i+4)):
-            print("    ", end="")
-            print(action_value_f[j, [0]], end="     ")
-        print()
-
-        for j in range(i, (i+4)):
-            print(action_value_f[j, [3,1]], end=" ")
-        print()
-
-        for j in range(i, (i+4)):
-            print("    ", end="")
-            print(action_value_f[j, [2]], end="     ")
-        print()
-
-        print("-----------------------------------------------------------")
-
-    policy = np.argmax(action_value_f, 1).reshape((4,4))
-    policy = np.array(policy, dtype=str)
-    policy[policy == '0'] = " up  "
-    policy[policy == '1'] = "right"
-    policy[policy == '2'] = "down "
-    policy[policy == '3'] = "left "
-    print(policy)

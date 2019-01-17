@@ -20,10 +20,10 @@ from nn_and_utils import NeuralNet, decide, ReplayMemory, formatter
 from nn_and_utils import print_statistics, dummify
 import torch
 
-nrefroze = 40
+nrefroze = 100
 nepisodes = 5_000_000
-replay_memory_capacity = 5_000
-batch_size = 100
+replay_memory_capacity = 100_000
+batch_size = 500
 lr = 0.05
 
 # Construct and load memory
@@ -38,13 +38,13 @@ for _ in range(replay_memory_capacity):
     if ended:
         game = Game()
 
-neural_net = NeuralNet(17, 4, 5, 1000, lr).cuda()
+neural_net = NeuralNet(17, 4, 2, 3000, lr).cuda()
 
 #example = torch.as_tensor(cur_state,dtype=torch.float32).cuda()[None]
 #example = torch.cat((example,example))
 #neural_net.forward = torch.jit.trace(neural_net, example).forward
 
-neural_net_frozen = NeuralNet(17, 4, 5, 1000, lr).cuda()
+neural_net_frozen = NeuralNet(17, 4, 2, 3000, lr).cuda()
 neural_net_frozen.load_state_dict(neural_net.state_dict())
 neural_net_frozen.eval()
 

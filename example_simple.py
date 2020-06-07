@@ -25,6 +25,15 @@ except ImportError:
         w = w / w.sum()
         return w
 
+def progress_bar(current, total, barsize=65):
+    current = current + 1
+    base = "\r[{:{barsize}}] {:.2f}%"
+    f1 = "="*(current*barsize//total)
+    f2 = 100/total*current
+    print(base.format(f1, f2, barsize=barsize), end='')
+    if current == total:
+        print()
+
 # Actions:
 # up = 0
 # right = 1
@@ -68,9 +77,9 @@ class Game():
         self.ended = 0
 
     def act(self, action):
-        assert(self.ended == 0) # ensure no playing after game is over
-        assert(self.state not in self.barriers)
-        assert(self.state not in [self.state_win, self.state_lose])
+        assert self.ended == 0  # ensure no playing after game is over
+        assert self.state not in self.barriers
+        assert self.state not in [self.state_win, self.state_lose]
 
         real_action = self._find_real_action(action)
         reward, self.ended = self._update_state(real_action)
@@ -142,11 +151,11 @@ def decide(state, action_value):
     return action
 
 action_value = np.zeros((16, 4))
-action_value_frozen = action_value.copy()
 
-nepisodes = 20_000
+nepisodes = 20_0
 lrs = np.geomspace(2, 1, nepisodes)-1
 for episode in range(nepisodes):
+    progress_bar(episode, nepisodes)
     ended = 0
     game = Game()
     lr = lrs[episode]
@@ -155,14 +164,10 @@ for episode in range(nepisodes):
         # action = np.random.choice(4)
         action = decide(cur_state, action_value)
         new_state, reward, ended = game.act(action)
-        action_value[cur_state, action] = (
-            (1 - lr) * action_value[cur_state, action] +
-            lr * (reward + .95 * action_value[new_state, np.argmax(action_value_frozen[new_state])])
-        )
-        action_value_temp = action_value
-        action_value = action_value_frozen
-        action_value_frozen = action_value_temp
-
+        p1 = (1 - lr) * action_value[cur_state, action]
+        p2 = action_value[new_state, np.argmax(action_value[new_state])]
+        p2 = lr * (reward + .75 * p2)
+        action_value[cur_state, action] = p1 + p2
 
 def formatter(f):
     f = np.round(f, 2)
@@ -198,7 +203,7 @@ for i in range(0, 16, 4):
         print(action_value[j, [2]], end="     ")
     print()
 
-    print("-----------------------------------------------------------")
+    print("-"*64)
 
 policy = np.argmax(action_value, 1).reshape((4,4))
 policy = np.array(policy, dtype=str)

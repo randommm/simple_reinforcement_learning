@@ -73,9 +73,9 @@ class Game():
         self.ended = 0
 
     def act(self, action):
-        assert(self.ended == 0) # ensure no playing after game is over
-        assert(self.state[0] not in self.barriers)
-        assert(self.state[0] not in [self.state_win, self.state_lose])
+        assert self.ended == 0 # ensure no playing after game is over
+        assert self.state[0] not in self.barriers
+        assert self.state[0] not in [self.state_win, self.state_lose]
 
         real_action = self._find_real_action(action)
         reward, self.ended = self._update_state(real_action)
